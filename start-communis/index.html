@@ -503,6 +503,8 @@
     font-size: 13px;
     opacity: .85;
   }
+  /* Utility: prevent breaking inside the wrapped run */
+  .nb { white-space: nowrap; }
 
   /* Footer / contact */
   .contact {
@@ -650,7 +652,7 @@
       <header class="doc-header">
         <div class="eyebrow">Communis · 사용 가이드</div>
         <h1 class="doc-title">커뮤니즈 회원가입 및 서비스 등록 안내</h1>
-        <p class="doc-sub">커뮤니즈(Communis) 사용을 위한 회원가입부터 서비스 신청, 발송 전 사전 준비까지의 전체 절차를 안내해 드립니다.</p>
+        <p class="doc-sub">커뮤니즈(Communis) 사용을 위한 회원가입부터 서비스 신청, 발송 전 사전 준비까지의 전체 절차를 <span class="nb">안내해 드립니다.</span></p>
         <div class="ch-toggles" role="group" aria-label="사용할 채널 선택">
           <button class="ch-toggle" type="button" data-channel="sms" aria-pressed="true">
             <span class="dot"></span>문자
@@ -698,7 +700,7 @@
         <!-- 1. 회원가입 -->
         <section class="step" id="s1">
           <h2 class="step-title"><span class="num">01</span>회원가입</h2>
-          <p>오너계정이 아닌 추가 사용자 계정 생성 시 아래와 같이 진행하시기 바랍니다.</p>
+          <p>계정 생성 시 아래와 같이 진행하시기 바랍니다.</p>
 
           <ul class="bullets">
             <li>
@@ -720,6 +722,11 @@
           <div class="callout info">
             <span class="ico">ℹ</span>
             <div>최초 회원가입 이후 다시 회원가입 페이지에서 사업자 등록번호 기입 시 <strong>일반멤버</strong>로 추가 회원가입 가능합니다.<span class="aside">(서브 담당자 등록 시 사용)</span></div>
+          </div>
+
+          <div class="callout">
+            <span class="ico">!</span>
+            <div>회원가입은 <strong>커뮤니즈 운영팀의 검토 및 승인 후 최종 가입 완료</strong>됩니다. 신청 이후 승인까지 다소 시간이 소요될 수 있으시니 참고 부탁드립니다.</div>
           </div>
 
           <div class="ref-link">
@@ -799,7 +806,7 @@
                 <h3>알림톡</h3>
                 <span class="pill-type">카카오 비즈메시지</span>
               </div>
-              <p>알림톡 발송 전 반드시 <strong>채널 생성</strong> 후 <span class="path">카카오 비즈메시지</span> 메뉴에서 카카오 알림톡 발송 시 사용되는 <strong>발신 프로필 및 템플릿 등록 후 검수</strong>가 필요합니다.</p>
+              <p>알림톡 발송 전 반드시 <strong>채널 생성</strong> 후 <span class="path">카카오 비즈메시지</span> 메뉴에서 카카오 알림톡 발송 시 사용되는 <strong class="nb">발신 프로필 및 템플릿 등록 후 검수</strong>가 필요합니다.</p>
 
               <div class="ref-link">
                 <span class="label">채널 생성</span>
