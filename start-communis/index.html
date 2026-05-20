@@ -33,6 +33,9 @@
     line-height: 1.7;
     font-size: 15px;
     -webkit-font-smoothing: antialiased;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    line-break: strict;
   }
   .page-wrap {
     max-width: 880px;
@@ -84,7 +87,6 @@
     color: var(--muted);
     font-size: 15px;
     margin: 0;
-    max-width: 60ch;
   }
   .doc-meta {
     display: flex;
@@ -495,6 +497,12 @@
     color: var(--brand-deep);
   }
   .callout.info .ico { color: var(--brand); }
+  .callout .aside {
+    display: block;
+    margin-top: 4px;
+    font-size: 13px;
+    opacity: .85;
+  }
 
   /* Footer / contact */
   .contact {
@@ -513,7 +521,8 @@
     font-size: 15px;
     font-weight: 500;
     color: rgba(255,255,255,.92);
-    max-width: 38ch;
+    flex: 1 1 280px;
+    min-width: 240px;
   }
   .contact .methods {
     display: flex;
@@ -584,7 +593,10 @@
     display: grid;
     gap: 14px;
     margin-top: 8px;
+    counter-reset: ch-num;
   }
+  .channel:not([hidden]) { counter-increment: ch-num; }
+  .channel .tag-ch::before { content: "4-" counter(ch-num); }
   .channel {
     border: 1px solid var(--line);
     border-radius: 12px;
@@ -707,7 +719,7 @@
 
           <div class="callout info">
             <span class="ico">ℹ</span>
-            <div>최초 회원가입 이후 다시 회원가입 페이지에서 사업자 등록번호 기입 시 <strong>일반멤버</strong>로 추가 회원가입 가능합니다. (서브 담당자 등록 시 사용)</div>
+            <div>최초 회원가입 이후 다시 회원가입 페이지에서 사업자 등록번호 기입 시 <strong>일반멤버</strong>로 추가 회원가입 가능합니다.<span class="aside">(서브 담당자 등록 시 사용)</span></div>
           </div>
 
           <div class="ref-link">
@@ -764,10 +776,26 @@
 
           <div class="channel-grid">
 
-            <!-- 4-1 알림톡 -->
+            <!-- 문자 (SMS/LMS/MMS) -->
+            <div class="channel" data-channel="sms">
+              <div class="channel-head">
+                <span class="tag-ch"></span>
+                <h3>SMS / LMS / MMS</h3>
+                <span class="pill-type">문자 메시지</span>
+              </div>
+              <p>문자 발송 전 <strong>문자 발신번호 등록</strong>이 필요합니다.</p>
+              <ul class="bullets">
+                <li>
+                  <span class="path">발신번호<span class="sep">›</span><span class="quoted">문자 발신번호</span></span>
+                  메뉴에서 발신번호 등록 후 <strong>승인</strong>이 필요합니다.
+                </li>
+              </ul>
+            </div>
+
+            <!-- 알림톡 -->
             <div class="channel" data-channel="alim">
               <div class="channel-head">
-                <span class="tag-ch">4-1</span>
+                <span class="tag-ch"></span>
                 <h3>알림톡</h3>
                 <span class="pill-type">카카오 비즈메시지</span>
               </div>
@@ -795,26 +823,10 @@
               </div>
             </div>
 
-            <!-- 4-2 SMS/LMS/MMS -->
-            <div class="channel" data-channel="sms">
-              <div class="channel-head">
-                <span class="tag-ch">4-2</span>
-                <h3>SMS / LMS / MMS</h3>
-                <span class="pill-type">문자 메시지</span>
-              </div>
-              <p>문자 발송 전 <strong>문자 발신번호 등록</strong>이 필요합니다.</p>
-              <ul class="bullets">
-                <li>
-                  <span class="path">발신번호<span class="sep">›</span><span class="quoted">문자 발신번호</span></span>
-                  메뉴에서 발신번호 등록 후 <strong>승인</strong>이 필요합니다.
-                </li>
-              </ul>
-            </div>
-
-            <!-- 4-3 RCS -->
+            <!-- RCS -->
             <div class="channel" data-channel="rcs">
               <div class="channel-head">
-                <span class="tag-ch">4-3</span>
+                <span class="tag-ch"></span>
                 <h3>RCS</h3>
                 <span class="pill-type">RCS BIZ CENTER</span>
               </div>
