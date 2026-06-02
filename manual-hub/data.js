@@ -82,25 +82,22 @@
       status: "live",
     },
     {
-      id: "mcsagent",
-      name: "KT McsAgent",
+      id: "mcs",
+      name: "KT MCS & X_MCS Agent",
       label: "엔진",
       provider: "KT",
       transport: "TCP_SOCKET",
-      center: "legacy",
-      desc: "KT가 직접 제공하는 TCP 소켓 통신 엔진. 스마트메시지(크로샷) 전용이며 1·2센터(레거시)에 연동한다.",
-      versions: ["스마트메시지 버전", "스마트메시지 + RCS 버전"],
-      supports: ["smart", "rcs"],
-      status: "live",
-    },
-    {
-      id: "xmcsagent",
-      name: "KT X_McsAgent",
-      label: "엔진",
-      provider: "KT",
-      transport: "TCP_SOCKET",
-      center: "next_gen",
-      desc: "McsAgent와 동일 구성의 TCP 소켓 엔진으로, 차세대 센터에 연동한다. 스마트메시지·RCS 발송을 지원한다.",
+      center: null, // 레거시·차세대 모두 포함(단일 센터 아님) — 차이는 본문에서 표기
+      desc: "KT가 직접 제공하는 TCP 소켓 통신 엔진. 레거시(McsAgent)와 차세대(X_McsAgent)를 합친 연동 방식.",
+      cardSub: "KT 제공 · TCP 소켓 · 레거시 + 차세대", // 카드 보조 텍스트
+
+      // 상세 페이지 헤더에 문단(불릿)으로 표시 — 카드/검색에는 위 desc 사용
+      detailIntro: [
+        "KT가 직접 제공하는 <b>TCP 소켓 통신 엔진</b>입니다.",
+        "연동 센터에 따라 <b>레거시(McsAgent · 1·2센터)</b>와 <b>차세대(X_McsAgent · 차세대 센터)</b>로 나뉩니다.",
+        "두 방식의 구성은 거의 동일하며, <b>일부 설정 값</b>만 다릅니다. (다른 부분은 본문에 따로 표기)",
+        "<b>스마트메시지</b>와 <b>RCS</b> 발송을 지원합니다.",
+      ],
       versions: ["스마트메시지 버전", "스마트메시지 + RCS 버전"],
       supports: ["smart", "rcs"],
       status: "live",
@@ -290,5 +287,17 @@
     showsCenter,
     agentDisplayName,
     buildSearchIndex,
+    // 매뉴얼·에이전트 다운로드 페이지
+    DOWNLOADS: "https://cms.mono.co.kr/downloads",
+    // 우측 네비 바로가기
+    QUICKLINKS: [
+      { label: "CMS (모노 고객지원)", url: "https://cms.mono.co.kr" },
+      { label: "MSP 바로가기 (레거시)", url: "https://msp.kttcs.com/" },
+      { label: "MSP 바로가기 (차세대)", url: "https://msp.xroshot.com/" },
+      { label: "KT OpenAPI (크로샷)", url: "https://openapi.xroshot.com/" },
+      { label: "KT RCS (Hermes)", url: "https://rcs.hermes.kt.com/" },
+      { label: "RBC (RCS Biz Center)", url: "https://www.rcsbizcenter.com/main" },
+      { label: "커뮤니즈", url: "https://communis.kt.co.kr/" },
+    ],
   };
 })();

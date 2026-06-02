@@ -52,12 +52,9 @@ function Header({ index, onNavigate, route, theme, toggleTheme }) {
           </div>
         </div>
 
-        {!onHome && (
-          <div className="hdr-search">
-            <SearchBar index={index} onNavigate={onNavigate} placeholder="문서·서비스·Agent 검색…" />
-          </div>
-        )}
-        {onHome && <div style={{ flex: 1 }}></div>}
+        <div className="hdr-search">
+          <SearchBar index={index} onNavigate={onNavigate} placeholder="문서·서비스·Agent 검색…" />
+        </div>
 
         <div className="hdr-actions">
           <button className="icon-btn" onClick={() => onNavigate({ name: "search", q: "" })} title="검색" aria-label="검색">
@@ -139,6 +136,7 @@ function App() {
       <Header index={index} onNavigate={navigate} route={route} theme={theme} toggleTheme={toggleTheme} />
       {screen}
       <Footer onNavigate={navigate} />
+      <RightNav index={index} onNavigate={navigate} />
     </div>
   );
 }

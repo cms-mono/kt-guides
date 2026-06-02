@@ -72,7 +72,8 @@
         intro: cell.intro || SVC_INTRO[svc.id],
       };
 
-      if (svc.id === "communis") {
+      // 셀이 features(하위 탭)를 제공하면 탭 구성, 아니면 communis 기본 탭
+      if ((cell.features && cell.features.length) || svc.id === "communis") {
         const features =
           cell.features && cell.features.length ? cell.features : fallbackFeatures();
         return Object.assign({}, base, { type: "features", features });
