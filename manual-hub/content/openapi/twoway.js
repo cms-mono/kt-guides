@@ -18,8 +18,10 @@
   var A = (C["openapi"] = C["openapi"] || {});
 
   A["twoway"] = {
-    // intro: "...",                 // (선택) 섹션 상단 설명 덮어쓰기
-    // download: { meta: "PDF · 2026-00-00" },  // (선택)
-    steps: T.apiSteps("양방향"),  // API 연동 더미
+    // 본문 미작성 — 공사중 표기(준비되면 features/steps를 실제 내용으로 교체)
+    features: [
+      { id: "send", name: "발송 연동", construction: true,
+        intro: "양방향서비스 API 연동 가이드는 준비 중입니다. 곧 업데이트될 예정입니다." },
+    ],
   };
 })();

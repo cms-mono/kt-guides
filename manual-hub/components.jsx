@@ -34,6 +34,7 @@ const ICONS = {
   external: "M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3",
   globe: "M12 22a10 10 0 100-20 10 10 0 000 20zM2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z",
   book: "M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5A2.5 2.5 0 006.5 22H20V2H6.5A2.5 2.5 0 004 4.5v15z",
+  copy: "M8 8h11v11H8z M4 16V4h11",
 };
 
 function Icon({ name, size, style, className }) {
@@ -107,13 +108,18 @@ function ServiceGlyph({ service, size }) {
 /* Agent 아바타 (provider 색) */
 function AgentAvatar({ agent, className }) {
   const p = window.HUB.PROVIDERS[agent.provider];
-  const initial =
-    agent.id === "openapi"
-      ? "API"
-      : agent.name.replace(/^KT |^M2X /, "").slice(0, 2);
+  const cls = (className || "agent-avatar") + " " + p.av;
+  // 서비스 자체 REST API = 🌐 이모지 / 그 외(에이전트) = 네트워킹 매니저 아이콘
+  // (agent.emoji 가 있으면 그 이모지를 우선 사용)
+  if (agent.emoji) {
+    return <div className={cls}><span className="agent-emoji">{agent.emoji}</span></div>;
+  }
+  if (agent.provider === "service") {
+    return <div className={cls}><span className="agent-emoji">🌐</span></div>;
+  }
   return (
-    <div className={(className || "agent-avatar") + " " + p.av}>
-      {agent.transport === "TCP_SOCKET" ? <Icon name="cpu" size={18} /> : initial}
+    <div className={cls}>
+      <span className="agent-icon-img" aria-hidden="true" />
     </div>
   );
 }
@@ -161,16 +167,21 @@ function SearchBar({ index, onNavigate, large, placeholder, autoFocus }) {
 
   function go(r) {
     setOpen(false);
-    setQ("");
-    onNavigate(r.route);
+    const term = q.trim();
+    // 검색어는 그대로 유지(다른 섹션에 이어 검색할 수 있게) — 드롭다운만 닫는다.
+    // 입력창 포커스는 해제해 활성 상태(빛남)를 풀고, 다시 클릭하면 onFocus로 열리게 한다.
+    if (inputRef.current) inputRef.current.blur();
+    // 문서/스텝 결과는 검색어를 함께 넘겨 도착 후 본문에서 강조되게 한다
+    const route = r.route && r.route.name === "agent" ? Object.assign({}, r.route, { q: term }) : r.route;
+    onNavigate(route);
   }
   function submit() {
     if (results[active]) {
       go(results[active]);
     } else if (q.trim()) {
       setOpen(false);
+      if (inputRef.current) inputRef.current.blur();
       onNavigate({ name: "search", q: q.trim() });
-      setQ("");
     }
   }
   function onKey(e) {
@@ -190,7 +201,7 @@ function SearchBar({ index, onNavigate, large, placeholder, autoFocus }) {
   }
 
   const groups = groupResults(results);
-  const kindLabel = { service: "서비스", agent: "Agent", document: "문서" };
+  const kindLabel = { resultcode: "결과코드", service: "서비스", agent: "Agent", document: "문서" };
 
   return (
     <div className="search" ref={ref}>
@@ -205,6 +216,7 @@ function SearchBar({ index, onNavigate, large, placeholder, autoFocus }) {
             setOpen(true);
           }}
           onFocus={() => q && setOpen(true)}
+          onClick={() => { if (q.trim()) setOpen(true); }}
           onKeyDown={onKey}
         />
         {q ? (
@@ -224,7 +236,7 @@ function SearchBar({ index, onNavigate, large, placeholder, autoFocus }) {
             </div>
           ) : (
             <>
-              {["service", "agent", "document"].map((type) =>
+              {["resultcode", "service", "agent", "document"].map((type) =>
                 groups[type] && groups[type].length ? (
                   <div key={type}>
                     <div className="ac-group-label">{kindLabel[type]}</div>
@@ -262,6 +274,13 @@ function SearchBar({ index, onNavigate, large, placeholder, autoFocus }) {
 }
 
 function AcIcon({ r }) {
+  if (r.type === "resultcode") {
+    return (
+      <div className="ac-ico" style={{ background: "var(--accent-soft)", color: "var(--accent-text)" }}>
+        <Icon name="hash" size={15} />
+      </div>
+    );
+  }
   if (r.type === "service") {
     const s = window.HUB.SERVICE_MAP[r.id];
     return (
@@ -288,22 +307,99 @@ function snippet(r, q) {
 }
 
 /* ---------------- 검색 로직 ---------------- */
+// 편집 거리 (오탈자 허용): 길이 차가 크면 조기 종료
+function editDistance(a, b) {
+  const m = a.length, n = b.length;
+  if (Math.abs(m - n) > 2) return 99;
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+    }
+  }
+  return dp[m][n];
+}
+// 단어 길이별 허용 오탈자 수 (짧은 단어는 오탈자 허용 안 함 → 오매칭 방지)
+function fuzzTol(t) { return t.length >= 7 ? 2 : t.length >= 4 ? 1 : 0; }
+
+// 질의어를 동의어·별칭으로 확장 (한글↔영문 표기 + 오탈자 포함)
+function expandQuery(raw, terms) {
+  const groups = (window.HUB && window.HUB.SYNONYMS) || [];
+  const set = new Set(terms);
+  set.add(raw);
+  groups.forEach((group) => {
+    const members = group.map((m) => m.toLowerCase());
+    // 사전 매칭은 정확/부분일치만 (편집거리 ✕ — '엠씨에스'↔'알씨에스'처럼 1글자 차이로
+    // 의미가 다른 한글 약어 오매칭 방지). 표기 변형은 그룹에 직접 등록해 처리.
+    const hit = members.some((ml) => {
+      if (raw === ml || (ml.length >= 3 && (raw.includes(ml) || ml.includes(raw)))) return true;
+      return terms.some(
+        (t) => t === ml || (t.length >= 3 && ml.length >= 3 && (ml.includes(t) || t.includes(ml)))
+      );
+    });
+    if (hit) members.forEach((m) => set.add(m));
+  });
+  return Array.from(set).filter(Boolean);
+}
+
+// 숫자 질의(결과코드)는 동일 내용이 여러 스텝에 흩어져 중복 노출되므로,
+// 결과코드 페이지로 일원화하는 단일 바로가기로 대체한다.
+function resultCodeShortcuts(code) {
+  const RC = window.HUB_RESULTCODES;
+  if (!RC || !RC.groups) return [];
+  const hits = [];
+  RC.groups.forEach((g) => {
+    const m = (g.codes || []).find((c) => String(c.code).trim() === code);
+    if (m) hits.push({ group: g, item: m });
+  });
+  if (!hits.length) return [];
+  const first = hits[0];
+  return [{
+    type: "resultcode",
+    id: "rc-" + code,
+    title: "결과코드 " + code + (hits.length > 1 ? " (" + hits.length + "개 서비스)" : ""),
+    body: first.item.title || "",
+    keywords: ["결과코드", "응답코드"].concat(hits.map((h) => h.group.short)),
+    route: { name: "resultcodes", group: first.group.id, q: code },
+    _score: 999,
+  }];
+}
+
 function searchIndex(index, query) {
-  const q = query.trim().toLowerCase();
-  if (!q) return [];
-  const terms = q.split(/\s+/);
+  const raw = query.trim().toLowerCase();
+  if (!raw) return [];
+  // 결과코드(2~5자리 숫자) 검색 → 결과코드 페이지 바로가기로 통합
+  if (/^\d{2,5}$/.test(raw)) {
+    const rc = resultCodeShortcuts(raw);
+    if (rc.length) return rc;
+  }
+  const terms = raw.split(/\s+/);
+  const variants = expandQuery(raw, terms); // 원 질의어 + 동의어·별칭
   const scored = [];
   index.forEach((item) => {
     const title = (item.title || "").toLowerCase();
     const kw = (item.keywords || []).join(" ").toLowerCase();
     const body = (item.body || "").toLowerCase();
-    let score = 0;
-    terms.forEach((t) => {
-      if (title.includes(t)) score += title.startsWith(t) ? 12 : 8;
-      if (kw.includes(t)) score += 5;
-      if (body.includes(t)) score += 2;
+    const deep = (item.search || "").toLowerCase(); // 스텝 본문·표 셀(컬럼명)·코드
+    let score = 0, matched = false;
+    variants.forEach((v) => {
+      if (!v) return;
+      if (title.includes(v)) { score += title.startsWith(v) ? 12 : 8; matched = true; }
+      else if (kw.includes(v)) { score += 5; matched = true; }
+      else if (body.includes(v)) { score += 2; matched = true; }
+      else if (deep.includes(v)) { score += 3; matched = true; }
     });
-    // type weight
+    // 오탈자 보정: 정확·동의어 매칭이 전혀 없을 때만 제목·키워드 토큰과 편집거리 비교
+    if (!matched) {
+      const tokens = (title + " " + kw).split(/[^a-z0-9가-힣]+/).filter(Boolean);
+      const fuzzy = terms.some(
+        (t) => fuzzTol(t) > 0 && tokens.some((tok) => editDistance(t, tok) <= fuzzTol(t))
+      );
+      if (fuzzy) { score += 4; matched = true; }
+    }
     if (score > 0) {
       if (item.type === "service") score += 3;
       else if (item.type === "agent") score += 2;
@@ -450,30 +546,89 @@ function siteHost(url) {
   try { return new URL(url).hostname.replace(/^www\./, ""); } catch (e) { return url; }
 }
 function SiteLinks({ sites, compact }) {
+  const [pick, setPick] = React.useState(null); // 매뉴얼 있는 사이트 클릭 시 팝업 대상
+  React.useEffect(() => {
+    if (!pick) return;
+    const onKey = (e) => { if (e.key === "Escape") setPick(null); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [pick]);
   if (!sites || !sites.length) return null;
+
+  const inner = (s, hasManual) => (
+    <>
+      <div className="site-link-ico"><Icon name="globe" size={18} /></div>
+      <div className="site-link-main">
+        <div className="site-link-top">
+          <span className="site-kind">{s.kind}</span>
+          <span className="site-title">{s.title}</span>
+        </div>
+        <div className="site-desc">{s.desc}</div>
+        <div className="site-url"><Icon name="external" size={12} />{siteHost(s.url)}</div>
+      </div>
+      <span className="site-arrow"><Icon name={hasManual ? "chevron" : "arrow"} size={16} /></span>
+    </>
+  );
+
   return (
     <div className={"site-links" + (compact ? " compact" : "")}>
-      {sites.map((s, i) => (
-        <a
-          key={i}
-          className="site-link"
-          href={s.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="site-link-ico"><Icon name="globe" size={18} /></div>
-          <div className="site-link-main">
-            <div className="site-link-top">
-              <span className="site-kind">{s.kind}</span>
-              <span className="site-title">{s.title}</span>
+      {sites.map((s, i) => {
+        const hasManual = !!s.manualUrl;
+        // 매뉴얼이 있으면 버튼(팝업), 없으면 사이트로 바로 이동
+        return hasManual ? (
+          <button
+            key={i}
+            type="button"
+            className="site-link"
+            onClick={(e) => { e.stopPropagation(); setPick(s); }}
+          >
+            {inner(s, true)}
+          </button>
+        ) : (
+          <a
+            key={i}
+            className="site-link"
+            href={s.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {inner(s, false)}
+          </a>
+        );
+      })}
+
+      {pick && ReactDOM.createPortal(
+        <div className="site-modal-back" onClick={() => setPick(null)}>
+          <div className="site-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+            <button className="site-modal-x" onClick={() => setPick(null)} aria-label="닫기">
+              <Icon name="x" size={18} />
+            </button>
+            <div className="site-modal-head">
+              <span className="site-kind">{pick.kind}</span>
+              <h3>{pick.title}</h3>
             </div>
-            <div className="site-desc">{s.desc}</div>
-            <div className="site-url"><Icon name="external" size={12} />{siteHost(s.url)}</div>
+            <p className="site-modal-desc">{pick.desc}</p>
+            <div className="site-modal-btns">
+              <a className="site-modal-btn site" href={pick.url} target="_blank" rel="noopener noreferrer" onClick={() => setPick(null)}>
+                <span className="site-modal-btn-ic"><Icon name="external" size={18} /></span>
+                <span className="site-modal-btn-tx">
+                  <b>사이트 바로가기</b>
+                  <span>{siteHost(pick.url)}</span>
+                </span>
+              </a>
+              <a className="site-modal-btn manual" href={pick.manualUrl} target="_blank" rel="noopener noreferrer" onClick={() => setPick(null)}>
+                <span className="site-modal-btn-ic"><Icon name="book" size={18} /></span>
+                <span className="site-modal-btn-tx">
+                  <b>매뉴얼 보기</b>
+                  <span>{/cms\.mono\.co\.kr/.test(pick.manualUrl) ? "PDF 다운로드" : siteHost(pick.manualUrl)}</span>
+                </span>
+              </a>
+            </div>
           </div>
-          <span className="site-arrow"><Icon name="arrow" size={16} /></span>
-        </a>
-      ))}
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
